@@ -47,7 +47,7 @@ export function catalogFilePath(filePath: string) {
   return path.join(process.cwd(), "public", "art", name);
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
+export function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
 }
@@ -64,7 +64,7 @@ export function parseWorks(value: unknown): Work[] {
       status === "sold" || status === "in-studio" || status === "not-for-sale" ? status : "not-for-sale";
     return {
       title: typeof record.title === "string" ? record.title : record.slug,
-      year: typeof record.year === "number" ? record.year : new Date().getFullYear(),
+      year: typeof record.year === "number" ? record.year : 0,
       medium: typeof record.medium === "string" ? record.medium : "",
       surface: typeof record.surface === "string" ? record.surface : "",
       widthIn: typeof record.widthIn === "number" ? record.widthIn : 0,

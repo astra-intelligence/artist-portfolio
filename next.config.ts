@@ -49,13 +49,8 @@ const nextConfig: NextConfig = {
               ],
             },
             {
-              source: "/curate",
-              headers: [
-                { key: "X-Robots-Tag", value: "noindex, nofollow" },
-                { key: "Cache-Control", value: "private, no-store" },
-              ],
-            },
-            {
+              // ":path*" matches zero or more segments, so this covers
+              // /curate itself as well as anything under it.
               source: "/curate/:path*",
               headers: [
                 { key: "X-Robots-Tag", value: "noindex, nofollow" },

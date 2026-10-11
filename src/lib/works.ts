@@ -7,8 +7,12 @@ import worksJson from "../../content/works.json";
 import { parseWorks } from "@/lib/catalog";
 import type { Work } from "@/lib/types";
 
+// Parsed once when the module first loads (like a file-scope static in C++),
+// then shared by every page that asks for the list during the build.
+const works = parseWorks(worksJson);
+
 export function getWorks(): Work[] {
-  return parseWorks(worksJson);
+  return works;
 }
 
 export function getWork(slug: string) {

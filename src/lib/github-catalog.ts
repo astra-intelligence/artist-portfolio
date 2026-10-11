@@ -8,7 +8,7 @@
  * remove a path from the tree). The ref update is not forced, so a racing
  * desk save comes back as 409/422 and the caller retries once.
  */
-import { assertCatalogPath } from "@/lib/catalog";
+import { asRecord, assertCatalogPath } from "@/lib/catalog";
 
 const DEFAULT_REPO = "dblevins-3dgfx/artist-portfolio";
 
@@ -44,11 +44,6 @@ function repoCoordinates() {
     throw new Error("STUDIO_GITHUB_BRANCH is not a branch name.");
   }
   return { repo, branch };
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
 }
 
 async function github(pathname: string, init?: RequestInit) {
