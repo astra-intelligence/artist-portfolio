@@ -11,7 +11,7 @@
  * these URLs are either local files or raw GitHub bytes.
  */
 import Image from "next/image";
-import { useActionState, useEffect, type MouseEvent, type ReactNode } from "react";
+import { useActionState, useEffect, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { logout, saveWork, type DeskFormState } from "@/app/curate/actions";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,25 @@ function FormError({ error }: { error?: string }) {
       {error}
     </p>
   );
+}
+
+// Vercel turns away a request over 4.5 MB before the server action runs, so
+// the server's own size message would never show. Keep in step with
+// imageFromForm in work-form.ts.
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+
+// An oversized file is cleared so not even Remove (which skips validation)
+// sends it. The custom validity message blocks Save until a new file is chosen.
+function checkPhotoSize(event: ChangeEvent<HTMLInputElement>) {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
+  if (file && file.size > MAX_PHOTO_BYTES) {
+    input.value = "";
+    input.setCustomValidity("That photograph is over 4 MB. Export a smaller JPEG and try again.");
+    input.reportValidity();
+  } else {
+    input.setCustomValidity("");
+  }
 }
 
 function PendingButtons({
@@ -233,6 +252,7 @@ function WorkForm({
             name="image"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/tiff,.jpg,.jpeg,.png,.webp,.tif,.tiff"
+            onChange={checkPhotoSize}
           />
         </Field>
         <p className="text-sm text-muted-foreground">
@@ -264,6 +284,7 @@ function NewWorkForm({ canSave }: { canSave: boolean }) {
           type="file"
           required
           accept="image/jpeg,image/png,image/webp,image/tiff,.jpg,.jpeg,.png,.webp,.tif,.tiff"
+          onChange={checkPhotoSize}
         />
       </Field>
       <PaintingFields idPrefix="new" />

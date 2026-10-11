@@ -82,13 +82,18 @@ export function readWorkForm(
   return { intent: "save" as const, existingSlug, fields };
 }
 
+// Leaves room under the 4.5 MB request limit in next.config.ts for the other
+// form fields. Keep in step with MAX_PHOTO_BYTES in curate-desk.tsx, which
+// checks the same size in the browser.
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+
 export async function imageFromForm(
   formData: FormData,
 ): Promise<{ error: string } | { bytes: Buffer | null }> {
   const value = formData.get("image");
   if (!(value instanceof File) || value.size === 0) return { bytes: null as Buffer | null };
-  if (value.size > 20 * 1024 * 1024) {
-    return { error: "That photograph is over 20 MB. Export a smaller file and try again." };
+  if (value.size > MAX_PHOTO_BYTES) {
+    return { error: "That photograph is over 4 MB. Export a smaller JPEG and try again." };
   }
   return { bytes: Buffer.from(await value.arrayBuffer()) };
 }
