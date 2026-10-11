@@ -24,7 +24,9 @@ const nextConfig: NextConfig = {
   ...(basePath ? { basePath, assetPrefix: basePath } : {}),
   experimental: {
     serverActions: {
-      bodySizeLimit: "20mb",
+      // Vercel rejects function request bodies over 4.5 MB before the action
+      // runs, so a higher limit here would never be reached.
+      bodySizeLimit: "4.5mb",
     },
   },
   outputFileTracingIncludes: {
