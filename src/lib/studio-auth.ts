@@ -14,7 +14,13 @@
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { cookies, headers } from "next/headers";
 
-const COOKIE = "studio_desk";
+// Only the desk reads the session, so the browser sends it only to /curate.
+// The name changed when the path did: a response can set one cookie per
+// name, so a new name is how sign-in and sign-out can also clear the old
+// site-wide cookie. Drop LEGACY_COOKIE once old sessions have expired.
+const COOKIE = "studio_desk_session";
+const COOKIE_PATH = "/curate";
+const LEGACY_COOKIE = "studio_desk";
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_TRIES = 8;
 const SESSION_DAYS = 14;
@@ -70,7 +76,7 @@ function cookieOptions(maxAge: number) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
-    path: "/",
+    path: COOKIE_PATH,
     maxAge,
   };
 }
@@ -123,10 +129,12 @@ export async function signIn(attempt: string): Promise<{ error: string } | { ok:
   clearFailures(address);
   const jar = await cookies();
   jar.set(COOKIE, mintSession(password), cookieOptions(SESSION_MS / 1000));
+  jar.delete({ name: LEGACY_COOKIE, path: "/" });
   return { ok: true as const };
 }
 
 export async function signOut() {
   const jar = await cookies();
   jar.set(COOKIE, "", cookieOptions(0));
+  jar.delete({ name: LEGACY_COOKIE, path: "/" });
 }
