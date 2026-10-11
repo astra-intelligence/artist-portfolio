@@ -37,6 +37,18 @@ const nextConfig: NextConfig = {
         async headers() {
           return [
             {
+              // Every page. Refusing to be framed stops a site from overlaying
+              // the desk to trick a signed-in click. The CSP starts with only
+              // frame-ancestors so it cannot block the app's own scripts.
+              source: "/:path*",
+              headers: [
+                { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+                { key: "X-Frame-Options", value: "DENY" },
+                { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                { key: "X-Content-Type-Options", value: "nosniff" },
+              ],
+            },
+            {
               source: "/curate",
               headers: [
                 { key: "X-Robots-Tag", value: "noindex, nofollow" },
