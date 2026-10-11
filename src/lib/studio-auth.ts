@@ -1,7 +1,10 @@
 /*
- * Studio-desk session. The cookie holds an HMAC of a fixed string, keyed by
- * the password. It does not hold the password. comparing digests with
- * timingSafeEqual avoids a byte-by-byte early exit.
+ * Studio-desk session. The cookie holds the time it was issued and an HMAC
+ * of that time, keyed by the password. It does not hold the password. The
+ * server refuses a session older than SESSION_DAYS, so a copied cookie stops
+ * working even if the browser keeps it. Changing STUDIO_PASSWORD ends every
+ * session at once. Comparing digests with timingSafeEqual avoids a
+ * byte-by-byte early exit.
  *
  * cookies() and headers() are request-scoped Next APIs. Calling them marks
  * the route dynamic. The failed-login map hangs off globalThis because a
@@ -15,6 +18,10 @@ const COOKIE = "studio_desk";
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_TRIES = 8;
 const SESSION_DAYS = 14;
+const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+// Room for a server clock that runs slightly behind the one that signed.
+const CLOCK_SKEW_MS = 60 * 1000;
+const SESSION = /^v2\.(\d{1,15})\.([0-9a-f]{64})$/;
 
 type AttemptBucket = Map<string, number[]>;
 
@@ -33,14 +40,21 @@ function signingKey(password: string) {
   return createHash("sha256").update(`thomasene-studio-desk:${password}`).digest();
 }
 
-export function mintSession(password: string) {
-  return createHmac("sha256", signingKey(password)).update("desk-session-v1").digest("hex");
+function sessionDigest(password: string, issuedAt: number) {
+  return createHmac("sha256", signingKey(password)).update(`desk-session-v2.${issuedAt}`).digest("hex");
 }
 
-export function sessionMatches(cookie: string, password: string) {
-  const expected = mintSession(password);
-  const left = Buffer.from(cookie);
-  const right = Buffer.from(expected);
+export function mintSession(password: string, issuedAt = Date.now()) {
+  return `v2.${issuedAt}.${sessionDigest(password, issuedAt)}`;
+}
+
+export function sessionMatches(cookie: string, password: string, now = Date.now()) {
+  const match = SESSION.exec(cookie);
+  if (!match) return false;
+  const issuedAt = Number(match[1]);
+  if (issuedAt > now + CLOCK_SKEW_MS || now - issuedAt >= SESSION_MS) return false;
+  const left = Buffer.from(match[2]);
+  const right = Buffer.from(sessionDigest(password, issuedAt));
   if (left.length !== right.length) return false;
   return timingSafeEqual(left, right);
 }
@@ -108,7 +122,7 @@ export async function signIn(attempt: string): Promise<{ error: string } | { ok:
   }
   clearFailures(address);
   const jar = await cookies();
-  jar.set(COOKIE, mintSession(password), cookieOptions(60 * 60 * 24 * SESSION_DAYS));
+  jar.set(COOKIE, mintSession(password), cookieOptions(SESSION_MS / 1000));
   return { ok: true as const };
 }
 
