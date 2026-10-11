@@ -81,6 +81,11 @@ test("the image path always comes from the web name", () => {
   assert.equal(work.image, "/art/lake.jpg");
 });
 
+test("a missing year reads as 0, whatever today's date is", () => {
+  const [work] = parseWorks([{ slug: "lake" }]);
+  assert.equal(work.year, 0);
+});
+
 test("serializeWorks round-trips through parseWorks", () => {
   const works = parseWorks([
     {

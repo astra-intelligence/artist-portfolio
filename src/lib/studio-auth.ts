@@ -88,18 +88,23 @@ export async function clientAddress() {
   return address.slice(0, 80);
 }
 
-function lockedOut(address: string) {
+// Failed tries from this address inside the window. Older ones are dropped
+// from the map as a side effect, so the list never grows without bound.
+function recentFailures(address: string) {
   const now = Date.now();
   const recent = (attempts().get(address) || []).filter((time) => now - time < WINDOW_MS);
   attempts().set(address, recent);
-  return recent.length >= MAX_TRIES;
+  return recent;
+}
+
+function lockedOut(address: string) {
+  return recentFailures(address).length >= MAX_TRIES;
 }
 
 function recordFailure(address: string) {
-  const now = Date.now();
-  const recent = (attempts().get(address) || []).filter((time) => now - time < WINDOW_MS);
-  recent.push(now);
-  attempts().set(address, recent);
+  // recentFailures returns the array stored in the map (a reference, like a
+  // C++ std::vector&), so push() updates the stored list too.
+  recentFailures(address).push(Date.now());
 }
 
 function clearFailures(address: string) {

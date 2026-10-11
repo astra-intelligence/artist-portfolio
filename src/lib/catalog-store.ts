@@ -203,6 +203,12 @@ function friendlySaveError(error: unknown) {
   return "The catalog could not be saved.";
 }
 
+// A title on one line and short enough for a git commit subject. Titles
+// already in works.json may predate the form's whitespace cleanup.
+function commitTitle(title: string) {
+  return title.replace(/\s+/g, " ").slice(0, 80);
+}
+
 export async function savePainting(
   existingSlug: string,
   fields: WorkFields,
@@ -280,7 +286,7 @@ export async function savePainting(
         : [...catalog.works, next];
       const verb = existing ? "Update" : "Add";
       return {
-        message: `${verb} "${fields.title.replace(/\s+/g, " ").slice(0, 80)}" from the studio desk`,
+        message: `${verb} "${commitTitle(fields.title)}" from the studio desk`,
         works,
         manifest,
         files,
@@ -306,7 +312,7 @@ export async function removePainting(existingSlug: string): Promise<{ error: str
         files.push({ path: `public/art/${filename}`, bytes: null });
       }
       return {
-        message: `Remove "${existing.title.replace(/\s+/g, " ").slice(0, 80)}" from the studio desk`,
+        message: `Remove "${commitTitle(existing.title)}" from the studio desk`,
         works,
         manifest,
         files,
