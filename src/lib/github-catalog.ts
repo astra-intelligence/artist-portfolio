@@ -67,8 +67,16 @@ async function github(pathname: string, init?: RequestInit) {
   });
   const text = await response.text();
   if (!response.ok) {
-    const safe = text.replaceAll(token, "[redacted]").slice(0, 280);
-    throw new GitHubError(response.status, `GitHub responded ${response.status}. ${safe}`);
+    // The full reply goes to the server log (Vercel → Logs). The desk only
+    // gets a plain sentence: GitHub's wording means nothing to the artist.
+    const method = init?.method ?? "GET";
+    const safe = text.replaceAll(token, "[redacted]").slice(0, 2000);
+    console.error(`GitHub ${method} ${pathname} responded ${response.status}: ${safe}`);
+    const message =
+      method === "GET"
+        ? "GitHub could not load the catalog. Try again in a minute."
+        : "GitHub did not accept the save. Try again in a minute.";
+    throw new GitHubError(response.status, message);
   }
   return text ? (JSON.parse(text) as Record<string, unknown>) : {};
 }
