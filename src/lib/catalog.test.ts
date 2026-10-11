@@ -1,0 +1,136 @@
+import assert from "node:assert/strict";
+import path from "node:path";
+import { test } from "node:test";
+import {
+  MANIFEST_PATH,
+  WORKS_PATH,
+  assertCatalogPath,
+  catalogFilePath,
+  isCatalogSlug,
+  parseManifest,
+  parseWorks,
+  serializeManifest,
+  serializeWorks,
+} from "@/lib/catalog";
+
+test("web names are lowercase words joined by single hyphens", () => {
+  for (const slug of ["bon-voyage", "a", "work-2"]) assert.equal(isCatalogSlug(slug), true, slug);
+  for (const slug of ["", "Bon-Voyage", "bon--voyage", "-bon", "bon-", "bon voyage", "../x"]) {
+    assert.equal(isCatalogSlug(slug), false, slug);
+  }
+});
+
+test("only the catalog, the manifest, and preview images may be written", () => {
+  for (const file of [WORKS_PATH, MANIFEST_PATH, "public/art/bon-voyage.jpg"]) {
+    assert.doesNotThrow(() => assertCatalogPath(file), file);
+  }
+  const refused = [
+    "content/studio.json",
+    "./content/works.json",
+    "content/../content/works.json",
+    "public/art/../../package.json",
+    "public/art/sub/bon-voyage.jpg",
+    "public/art/Bon-Voyage.jpg",
+    "public/art/bon-voyage.png",
+    "public/art/.jpg.jpg/x",
+    "/etc/passwd",
+    "",
+  ];
+  for (const file of refused) assert.throws(() => assertCatalogPath(file), /Refusing/, file);
+});
+
+test("allowed paths resolve inside the project", () => {
+  const root = process.cwd();
+  assert.equal(catalogFilePath(WORKS_PATH), path.join(root, "content", "works.json"));
+  assert.equal(catalogFilePath(MANIFEST_PATH), path.join(root, "content", "art-manifest.json"));
+  assert.equal(catalogFilePath("public/art/bon-voyage.jpg"), path.join(root, "public", "art", "bon-voyage.jpg"));
+  assert.throws(() => catalogFilePath("public/art/../secret.jpg"), /Refusing/);
+});
+
+test("parseWorks rejects a catalog that is not a list or has a bad web name", () => {
+  assert.throws(() => parseWorks({}), /not a list/);
+  assert.throws(() => parseWorks([{ slug: "ok" }, { slug: "Not OK" }]), /entry 2/);
+  assert.throws(() => parseWorks([null]), /entry 1/);
+});
+
+test("parseWorks fills safe defaults for missing or wrong fields", () => {
+  const [work] = parseWorks([
+    { slug: "lake", year: 2020, originalStatus: "stolen", subject: "dragons", featured: "yes", widthIn: "12" },
+  ]);
+  assert.deepEqual(work, {
+    title: "lake",
+    year: 2020,
+    medium: "",
+    surface: "",
+    widthIn: 0,
+    heightIn: 0,
+    statement: "",
+    subject: "",
+    featured: false,
+    originalStatus: "not-for-sale",
+    printsAvailable: false,
+    slug: "lake",
+    image: "/art/lake.jpg",
+    imageWidth: 0,
+    imageHeight: 0,
+  });
+});
+
+test("the image path always comes from the web name", () => {
+  const [work] = parseWorks([{ slug: "lake", year: 2020, image: "/etc/passwd" }]);
+  assert.equal(work.image, "/art/lake.jpg");
+});
+
+test("serializeWorks round-trips through parseWorks", () => {
+  const works = parseWorks([
+    {
+      title: "Lake",
+      year: 2021,
+      medium: "Oil",
+      surface: "Panel",
+      widthIn: 8,
+      heightIn: 10,
+      statement: "Quiet.",
+      subject: "places",
+      featured: true,
+      originalStatus: "sold",
+      printsAvailable: true,
+      slug: "lake",
+      imageWidth: 1400,
+      imageHeight: 1120,
+    },
+  ]);
+  const text = serializeWorks(works);
+  assert.ok(text.endsWith("}\n]\n"));
+  assert.deepEqual(parseWorks(JSON.parse(text)), works);
+});
+
+test("parseManifest keeps valid entries and drops bad ones", () => {
+  const manifest = parseManifest({
+    files: {
+      "a.jpg": { width: 10, height: 20, sha256: "abc", fingerprint: "0123456789abcdef" },
+      "b.jpg": { width: "10", sha256: "def", fingerprint: "not-a-fingerprint" },
+      "c.jpg": { width: 10, height: 20 },
+      "d.jpg": "junk",
+    },
+  });
+  assert.deepEqual(manifest, {
+    files: {
+      "a.jpg": { width: 10, height: 20, sha256: "abc", fingerprint: "0123456789abcdef" },
+      "b.jpg": { width: 0, height: 0, sha256: "def" },
+    },
+  });
+  assert.deepEqual(parseManifest(null), { files: {} });
+  assert.deepEqual(parseManifest({ files: [] }), { files: {} });
+});
+
+test("serializeManifest sorts file names so saves give stable diffs", () => {
+  const text = serializeManifest({
+    files: {
+      "b.jpg": { width: 1, height: 1, sha256: "b" },
+      "a.jpg": { width: 1, height: 1, sha256: "a" },
+    },
+  });
+  assert.deepEqual(Object.keys(JSON.parse(text).files), ["a.jpg", "b.jpg"]);
+  assert.ok(text.endsWith("\n"));
+});
