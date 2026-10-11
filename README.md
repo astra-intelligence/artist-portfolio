@@ -63,6 +63,8 @@ The live desk already uses two Vercel environment variables (Settings → Enviro
 - `STUDIO_PASSWORD` — a long password. This is what she types. It is not stored in the repository.
 - `STUDIO_GITHUB_TOKEN` — a GitHub fine-grained personal access token for this repository only, with Contents set to Read and write. The desk uses it to commit the watermarked preview and the catalog. Do not use a token that can see other repositories.
 
+The password is the desk’s main defense, so make it long and random, for example five or more unrelated words or 20+ characters from a password manager. The desk allows 8 wrong tries per 15 minutes from one address, but Vercel runs several copies of the server and each copy keeps its own count, which a restart also clears. Someone determined can get past that limit, so it slows guessing without stopping it. This is a deliberate trade-off. The worst someone with the password could do is change the public catalog, which Git history can restore, so a shared rate-limit store (such as Vercel KV) isn’t worth the extra setup for now.
+
 Create the token under GitHub → Settings → Developer settings → Fine-grained tokens. After both values are saved, redeploy the Vercel project so the desk can see them. Optional: `STUDIO_GITHUB_REPO` (default `dblevins-3dgfx/artist-portfolio`) and `STUDIO_GITHUB_BRANCH` (default `main`).
 
 To try the desk on your own computer, put only the password in `.env.local` and run `npm run dev`. Without the token, saves stay in this project’s files and are not published. Do not put the GitHub token in `.env.local` unless you mean to publish to the real catalog.
