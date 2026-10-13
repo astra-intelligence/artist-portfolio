@@ -54,7 +54,7 @@ export function Gallery({ works }: { works: CatalogWork[] }) {
     if (named.length === 0) return null;
     const rest = filtered.filter((work) => work.subjects.length === 0);
     if (rest.length > 0) {
-      named.push({ id: "other", label: "Other pictures", works: rest });
+      named.push({ id: "other", label: "Other paintings", works: rest });
     }
     return named;
   }, [filtered, groups, query, subject]);
@@ -81,7 +81,7 @@ export function Gallery({ works }: { works: CatalogWork[] }) {
           <div />
         )}
         <label className="block w-full sm:max-w-xs">
-          <span className="sr-only">Search pictures</span>
+          <span className="sr-only">Search paintings</span>
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -91,10 +91,10 @@ export function Gallery({ works }: { works: CatalogWork[] }) {
         </label>
       </div>
       <p className="mt-6 text-sm text-muted-foreground">
-        {filtered.length === 1 ? "1 picture" : `${filtered.length} pictures`}
+        {filtered.length === 1 ? "1 painting" : `${filtered.length} paintings`}
       </p>
       {filtered.length === 0 ? (
-        <p className="mt-10 max-w-md text-lg">No pictures match that search.</p>
+        <p className="mt-10 max-w-md text-lg">No paintings match that search.</p>
       ) : sections ? (
         <div className="mt-10 grid gap-14">
           {sections.map((section) => (
