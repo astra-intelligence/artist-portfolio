@@ -6,7 +6,13 @@
  *
  * OriginalStatus is a closed set of string tags, closer to an enum class
  * than to a free-form char*.
+ *
+ * subjects is a list (a JavaScript array, like a std::vector) because a
+ * painting can be in more than one group, say Portraits and Commissioned
+ * Works. It is kept in SUBJECTS order, so subjects[0] is the main one.
  */
+import type { SubjectId } from "@/lib/subjects";
+
 export type OriginalStatus = "in-studio" | "sold" | "not-for-sale";
 
 export type CatalogWork = {
@@ -15,7 +21,7 @@ export type CatalogWork = {
   year: number;
   medium: string;
   surface: string;
-  subject: string;
+  subjects: SubjectId[];
   statement: string;
   image: string;
   imageWidth: number;
@@ -31,7 +37,7 @@ export type Work = {
   widthIn: number;
   heightIn: number;
   statement: string;
-  subject: string;
+  subjects: SubjectId[];
   featured: boolean;
   originalStatus: OriginalStatus;
   printsAvailable: boolean;

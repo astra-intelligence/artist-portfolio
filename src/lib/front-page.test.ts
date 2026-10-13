@@ -13,7 +13,7 @@ function work(slug: string, featured = false): Work {
     widthIn: 0,
     heightIn: 0,
     statement: "",
-    subject: "",
+    subjects: [],
     featured,
     originalStatus: "not-for-sale",
     printsAvailable: false,

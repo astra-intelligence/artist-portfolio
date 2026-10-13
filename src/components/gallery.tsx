@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 function matchesQuery(work: CatalogWork, needle: string) {
   if (!needle) return true;
-  return [work.title, work.medium, work.statement, subjectLabel(work.subject), String(work.year)]
+  return [work.title, work.medium, work.statement, ...work.subjects.map(subjectLabel), String(work.year)]
     .join(" ")
     .toLowerCase()
     .includes(needle);
@@ -26,29 +26,33 @@ export function Gallery({ works }: { works: CatalogWork[] }) {
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState("all");
   const groups = useMemo(
-    () => SUBJECTS.filter((entry) => works.some((work) => work.subject === entry.id)),
+    () => SUBJECTS.filter((entry) => works.some((work) => work.subjects.includes(entry.id))),
     [works],
   );
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return works.filter((work) => {
-      if (subject !== "all" && work.subject !== subject) return false;
+      // includes() takes a SubjectId, and this state is a plain string, so
+      // compare with some() instead of casting.
+      if (subject !== "all" && !work.subjects.some((id) => id === subject)) return false;
       return matchesQuery(work, needle);
     });
   }, [works, query, subject]);
 
+  // The grouped view lists each painting once, under its first subject.
+  // The filter buttons above still find it under every subject it has.
   const sections = useMemo(() => {
     if (subject !== "all" || query.trim()) return null;
     const named: { id: string; label: string; works: CatalogWork[] }[] = groups
       .map((entry) => ({
         id: entry.id,
         label: entry.label,
-        works: filtered.filter((work) => work.subject === entry.id),
+        works: filtered.filter((work) => work.subjects[0] === entry.id),
       }))
       .filter((entry) => entry.works.length > 0);
     if (named.length === 0) return null;
-    const rest = filtered.filter((work) => !work.subject);
+    const rest = filtered.filter((work) => work.subjects.length === 0);
     if (rest.length > 0) {
       named.push({ id: "other", label: "Other pictures", works: rest });
     }

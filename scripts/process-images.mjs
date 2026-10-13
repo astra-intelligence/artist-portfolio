@@ -23,7 +23,6 @@ const studio = JSON.parse(readFileSync(path.join(root, "content", "studio.json")
 
 const MAX_EDGE = Number(studio.maxPreviewEdge) || 1400;
 const EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"]);
-const subjectIds = new Set(SUBJECTS.map((subject) => subject.id));
 
 function slugify(value) {
   return value
@@ -151,7 +150,7 @@ for (const file of files) {
     widthIn: 0,
     heightIn: 0,
     statement: "",
-    subject: "",
+    subjects: [],
     featured: false,
     originalStatus: "not-for-sale",
     printsAvailable: true,
@@ -163,9 +162,12 @@ for (const file of files) {
   };
   delete created.svg;
   delete created.sample;
-  if (!subjectIds.has(created.subject)) {
-    created.subject = "";
-  }
+  // A sidecar may still give the older single `subject`. Fold it into the
+  // list, then keep only known ids, in SUBJECTS order.
+  const wanted = new Set(Array.isArray(created.subjects) ? created.subjects : []);
+  if (typeof created.subject === "string") wanted.add(created.subject);
+  delete created.subject;
+  created.subjects = SUBJECTS.map((subject) => subject.id).filter((id) => wanted.has(id));
 
   if (existing) {
     existing.image = created.image;

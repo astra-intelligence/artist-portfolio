@@ -11,7 +11,7 @@
  * public/art/<slug>.jpg. Nothing else.
  */
 import path from "path";
-import { parseSubject } from "@/lib/subjects";
+import { parseSubjects } from "@/lib/subjects";
 import type { OriginalStatus, Work } from "@/lib/types";
 
 export const WORKS_PATH = "content/works.json";
@@ -52,6 +52,14 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+// Older catalogs stored one `subject` string per painting. Read that as a
+// one-item list so an entry written before the change still loads. Once
+// saved again it is written back as `subjects`.
+function readSubjects(record: Record<string, unknown>) {
+  if (Array.isArray(record.subjects)) return parseSubjects(record.subjects);
+  return parseSubjects(typeof record.subject === "string" ? [record.subject] : []);
+}
+
 export function parseWorks(value: unknown): Work[] {
   if (!Array.isArray(value)) throw new Error("The catalog is not a list.");
   return value.map((entry, index) => {
@@ -70,7 +78,7 @@ export function parseWorks(value: unknown): Work[] {
       widthIn: typeof record.widthIn === "number" ? record.widthIn : 0,
       heightIn: typeof record.heightIn === "number" ? record.heightIn : 0,
       statement: typeof record.statement === "string" ? record.statement : "",
-      subject: parseSubject(record.subject),
+      subjects: readSubjects(record),
       featured: record.featured === true,
       originalStatus,
       printsAvailable: record.printsAvailable === true,
@@ -112,7 +120,7 @@ export function serializeWorks(works: Work[]) {
       widthIn: work.widthIn,
       heightIn: work.heightIn,
       statement: work.statement,
-      subject: work.subject,
+      subjects: work.subjects,
       featured: work.featured,
       originalStatus: work.originalStatus,
       printsAvailable: work.printsAvailable,

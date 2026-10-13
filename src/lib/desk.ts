@@ -6,6 +6,8 @@
  * to choose which sentence to show. duplicateOf is empty, or a sentence
  * naming the other paintings that look like this one.
  */
+import type { SubjectId } from "@/lib/subjects";
+
 export type Publishing = "github" | "local" | "missing";
 
 export type DeskWork = {
@@ -17,7 +19,7 @@ export type DeskWork = {
   widthIn: number;
   heightIn: number;
   statement: string;
-  subject: string;
+  subjects: SubjectId[];
   featured: boolean;
   previewUrl: string;
   imageWidth: number;
@@ -34,6 +36,6 @@ export type WorkFields = {
   widthIn: number;
   heightIn: number;
   statement: string;
-  subject: string;
+  subjects: SubjectId[];
   featured: boolean;
 };

@@ -6,7 +6,7 @@
  */
 import type { WorkFields } from "@/lib/desk";
 import { isCatalogSlug } from "@/lib/catalog";
-import { parseSubject } from "@/lib/subjects";
+import { parseSubjects } from "@/lib/subjects";
 
 export function slugify(value: string) {
   return value
@@ -76,7 +76,9 @@ export function readWorkForm(
     widthIn,
     heightIn,
     statement,
-    subject: parseSubject(textField(formData, "subject", 40)),
+    // One checkbox per subject, all named "subjects". getAll returns the
+    // value of every checked box; an unchecked box sends nothing at all.
+    subjects: parseSubjects(formData.getAll("subjects")),
     featured: formData.get("featured") === "on",
   };
   return { intent: "save" as const, existingSlug, fields };

@@ -57,11 +57,14 @@ export default async function WorkDetailPage({
 
   const inches = formatInches(work.widthIn, work.heightIn);
   const materials = formatMaterials(work);
-  const subject = subjectLabel(work.subject);
+  const subjects = work.subjects.map(subjectLabel);
+  // "More like this": paintings that share any subject come first.
   const rest = getWorks().filter((entry) => entry.slug !== work.slug);
+  const sharesSubject = (entry: (typeof rest)[number]) =>
+    entry.subjects.some((id) => work.subjects.includes(id));
   const others = [
-    ...rest.filter((entry) => work.subject && entry.subject === work.subject),
-    ...rest.filter((entry) => !work.subject || entry.subject !== work.subject),
+    ...rest.filter(sharesSubject),
+    ...rest.filter((entry) => !sharesSubject(entry)),
   ].slice(0, 3);
 
   return (
@@ -85,7 +88,11 @@ export default async function WorkDetailPage({
         </figure>
         <div className="lg:sticky lg:top-24">
           <div className="flex flex-wrap gap-2">
-            {subject ? <Badge variant="secondary">{subject}</Badge> : null}
+            {subjects.map((label) => (
+              <Badge key={label} variant="secondary">
+                {label}
+              </Badge>
+            ))}
             {work.medium.trim() ? <Badge variant="secondary">{work.medium.trim()}</Badge> : null}
           </div>
           <h1 className="mt-4 font-heading text-5xl italic leading-tight">{work.title}</h1>
