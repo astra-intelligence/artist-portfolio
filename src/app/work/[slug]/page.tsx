@@ -29,7 +29,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const work = getWork(slug);
-  if (!work) return { title: "Picture" };
+  if (!work) return { title: "Painting" };
   return {
     title: work.title,
     description: work.statement || `${work.title}, ${work.year}.`,
@@ -116,7 +116,7 @@ export default async function WorkDetailPage({
       </div>
       {others.length > 0 ? (
         <div className="mt-16 border-t border-border pt-8">
-          <h2 className="font-heading text-2xl italic">More pictures</h2>
+          <h2 className="font-heading text-2xl italic">More paintings</h2>
           <ul className="mt-4 flex flex-col gap-2 text-sm">
             {others.map((entry) => (
               <li key={entry.slug}>

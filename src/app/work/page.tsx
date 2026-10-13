@@ -25,7 +25,7 @@ function catalogWorks(): CatalogWork[] {
 
 export const metadata: Metadata = {
   title: "Work",
-  description: "A catalog of original pictures.",
+  description: "A catalog of original paintings.",
 };
 
 export default function WorkPage() {
@@ -37,7 +37,7 @@ export default function WorkPage() {
       <h1 className="mt-3 font-heading text-5xl italic">The work</h1>
       {works.length === 0 ? (
         <p className="mt-12 max-w-md text-lg">
-          No pictures have been published yet. They appear after the studio processes
+          No paintings have been published yet. They appear after the studio processes
           photographs into previews.
         </p>
       ) : (

@@ -63,7 +63,7 @@ export default async function HomePage() {
           </Link>
         ) : (
           <div className="border border-border bg-card p-8">
-            <h2 className="font-heading text-3xl italic">No pictures yet</h2>
+            <h2 className="font-heading text-3xl italic">No paintings yet</h2>
           </div>
         )}
       </section>
@@ -71,7 +71,7 @@ export default async function HomePage() {
       {selected.length > 0 ? (
         <section className="mx-auto max-w-6xl px-5 pb-4">
           <div className="flex items-end justify-between gap-4 border-t border-border pt-10">
-            <h2 className="font-heading text-3xl italic">Selected pictures</h2>
+            <h2 className="font-heading text-3xl italic">Selected paintings</h2>
             <Link href="/work" className="text-sm underline-offset-4 hover:underline">
               All work
             </Link>

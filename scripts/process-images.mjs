@@ -145,7 +145,8 @@ for (const file of files) {
   const created = {
     title: titleFrom(base),
     year: new Date().getFullYear(),
-    medium: "Painting",
+    // Almost all of the work is oil; the desk can change it per painting.
+    medium: "Oil",
     surface: "",
     widthIn: 0,
     heightIn: 0,
