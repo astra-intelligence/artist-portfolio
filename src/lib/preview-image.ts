@@ -1,7 +1,7 @@
 /*
  * Turn an upload into the JPEG the site is allowed to publish.
  * Long edge is capped, camera metadata (EXIF, including GPS) is dropped,
- * and a repeating watermark is drawn from font outlines. Outlines, not a
+ * and one faint credit line is drawn from font outlines. Outlines, not a
  * live font: the host that rasterizes SVG does not apply an embedded face,
  * and the mark was coming out as empty boxes.
  *
@@ -11,22 +11,9 @@ import { createHash } from "crypto";
 import sharp from "sharp";
 import studio from "../../content/studio.json";
 import { previewFingerprint } from "./image-hash.mjs";
-import { applyWatermark } from "./watermark-svg.mjs";
+import { applyWatermark, markDifference } from "./watermark-svg.mjs";
 
 const MAX_EDGE = Number(studio.maxPreviewEdge) || 1400;
-
-async function meanDiff(left: Buffer, right: Buffer) {
-  const a = await sharp(left).raw().toBuffer();
-  const b = await sharp(right).raw().toBuffer();
-  const length = Math.min(a.length, b.length);
-  let total = 0;
-  let count = 0;
-  for (let index = 0; index < length; index += 47) {
-    total += Math.abs(a[index] - b[index]);
-    count += 1;
-  }
-  return count === 0 ? 0 : total / count;
-}
 
 export function looksLikeImage(bytes: Buffer) {
   if (bytes.length < 12) return false;
@@ -59,9 +46,8 @@ export async function renderPreview(input: Buffer): Promise<PreviewImage> {
     throw new Error("Use a JPEG, PNG, WebP, or TIFF photograph.");
   }
 
-  const label = String(studio.watermark || "PREVIEW").slice(0, 24);
   const showDomain = studio.domain && studio.domain !== "yourdomain.com";
-  const credit = (showDomain ? `${studio.artistName} · ${studio.domain}` : studio.artistName).slice(0, 48);
+  const credit = String(showDomain ? studio.domain : studio.artistName).slice(0, 48);
 
   let plain: Buffer;
   try {
@@ -84,9 +70,9 @@ export async function renderPreview(input: Buffer): Promise<PreviewImage> {
     );
   }
 
-  const marked = await applyWatermark(plain, label, credit);
+  const marked = await applyWatermark(plain, credit);
 
-  const changed = await meanDiff(plain, marked);
+  const changed = await markDifference(plain, marked);
   if (changed < 0.15) {
     throw new Error("The watermark did not show on that photograph. Try a different file.");
   }

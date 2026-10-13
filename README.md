@@ -37,13 +37,12 @@ GitHub Pages cannot check a password or accept an upload. On that copy, `/curate
 
 [`content/studio.json`](content/studio.json) already has the studio’s name, tagline, location, email, domain, and biography. Those fields are:
 
-- `artistName` — also burned into the watermark
+- `artistName` — burned into the watermark when no domain is set
 - `location`
 - `email` — shown when it contains `@` and does not end in `@example.com`
-- `domain` — `thomasene.art`, without `https://`. Also burned into the watermark
+- `domain` — `thomasene.art`, without `https://`. Also the faint line along the bottom of each preview
 - `siteUrl` — still empty. The sitemap uses it once it is a full `https://` address
 - `biography` — the about page
-- `watermark` — the word drawn across previews (`PREVIEW`)
 - `maxPreviewEdge` — longest side of a published preview, in pixels (`1400`)
 
 After the name or domain changes, rebuild the previews so the watermark matches:
@@ -75,7 +74,7 @@ To try the desk on your own computer, put only the password in `.env.local` and 
 2. Optionally add a sidecar next to a file. `evening-shore.tif` can have `evening-shore.json` with the title, year, medium, and size. The shape is in [`originals/README.md`](originals/README.md).
 3. Run `npm run process-images`.
 
-Each photograph becomes a JPEG in `public/art/` whose long edge is at most 1400 pixels. Camera data (including location) is removed. A repeating watermark is drawn across the picture. The script refuses to write a preview if that mark does not actually change the pixels.
+Each photograph becomes a JPEG in `public/art/` whose long edge is at most 1400 pixels. Camera data (including location) is removed. One faint `thomasene.art` line is drawn along the bottom edge. The script refuses to write a preview if that mark does not actually change the pixels.
 
 The catalog entries are in `content/works.json`. The first run fills them in. Later runs refresh the picture and leave your wording alone. `content/art-manifest.json` records a hash of each preview. `npm run build` checks that every public image is one of those previews, is small enough, and still has no camera data. Dropping a full-resolution file straight into `public/` fails the build.
 
@@ -85,6 +84,6 @@ Keep a private backup of `originals/`. The site cannot reconstruct the full phot
 
 ## What the image protection does, and what it does not
 
-A preview is a poor source for a reproduction: it is small, it is compressed, and the watermark repeats across it, including in a crop. Search engines are asked not to index the images. The original file is never placed where the web server can hand it out.
+A preview is a poor source for a reproduction: it is small and it is compressed. The watermark is a light credit line, not a barrier, so a crop can remove it. Search engines are asked not to index the images. The original file is never placed where the web server can hand it out.
 
 A screenshot is still possible. No website can prevent that. The practical protection is the reduced file plus the watermark, not a lock on right-click.

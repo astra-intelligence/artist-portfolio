@@ -53,70 +53,56 @@ function linePath(mark, text, centerX, baseline, fontSize, tracking) {
   return data.join(" ");
 }
 
-export function watermarkSvg(label, credit) {
+/*
+ * One faint line of text along the bottom edge, sized to the photograph.
+ * Light letters with a thin dark edge stay readable on pale and dark
+ * paint alike. The 1400px cap, not the mark, keeps previews from printing.
+ */
+function fontSizeFor(width, height) {
+  return Math.max(12, Math.round(Math.min(width, height) * 0.024));
+}
+
+export function watermarkSvg(credit, width, height) {
   const mark = loadFont();
-  const creditSize = credit.length > 32 ? 13 : 16;
-  const title = linePath(mark, label, 280, 156, 40, 6);
-  const note = linePath(mark, credit, 280, 188, creditSize, 1.6);
+  const fontSize = fontSizeFor(width, height);
+  const baseline = height - Math.round(fontSize * 0.9);
+  const line = linePath(mark, credit, width / 2, baseline, fontSize, fontSize * 0.08);
   return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320">
-  <g transform="rotate(-28 280 160)" fill="rgba(255,252,247,0.7)" stroke="rgba(24,18,14,0.62)" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke">
-    <path d="${title}"/>
-  </g>
-  <g transform="rotate(-28 280 160)" fill="rgba(255,252,247,0.62)" stroke="rgba(24,18,14,0.45)" stroke-width="0.75" stroke-linejoin="round" paint-order="stroke">
-    <path d="${note}"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <path d="${line}" fill="rgba(255,252,247,0.5)" stroke="rgba(24,18,14,0.35)" stroke-width="0.75" stroke-linejoin="round" paint-order="stroke"/>
 </svg>`);
 }
 
-/*
- * The mark is one 560×320 tile, repeated. Sharp rejects a tile that is
- * wider or taller than the photograph, even with tile:true. A wide crop,
- * a tall crop, or a file already under that size hits that check.
- * Rasterize once so the tile has a known pixel size, then shrink it to
- * fit. A photograph already large enough keeps the full tile.
- */
-const preparedTiles = new Map();
-
-async function preparedTile(label, credit) {
-  const key = `${label}\0${credit}`;
-  const cached = preparedTiles.get(key);
-  if (cached) return cached;
-  const pending = sharp(watermarkSvg(label, credit))
-    .png()
-    .toBuffer()
-    .then(async (png) => {
-      const meta = await sharp(png).metadata();
-      return { png, width: meta.width, height: meta.height };
-    });
-  preparedTiles.set(key, pending);
-  try {
-    return await pending;
-  } catch (error) {
-    preparedTiles.delete(key);
-    throw error;
-  }
-}
-
-export async function applyWatermark(plain, label, credit) {
-  const tile = await preparedTile(label, credit);
+export async function applyWatermark(plain, credit) {
   const photo = await sharp(plain).metadata();
-  const photoWidth = photo.width ?? tile.width;
-  const photoHeight = photo.height ?? tile.height;
-  let input = tile.png;
-  if (photoWidth < tile.width || photoHeight < tile.height) {
-    input = await sharp(tile.png)
-      .resize({
-        width: photoWidth,
-        height: photoHeight,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .png()
-      .toBuffer();
+  if (!photo.width || !photo.height) {
+    throw new Error("The photograph has no readable size.");
   }
   return sharp(plain)
-    .composite([{ input, tile: true, blend: "over" }])
+    .composite([{ input: watermarkSvg(credit, photo.width, photo.height), blend: "over" }])
     .jpeg({ quality: 70, progressive: true })
     .toBuffer();
+}
+
+/*
+ * Average pixel change in the bottom band, where the line sits. Measuring
+ * the whole picture would let JPEG noise outweigh one thin line, so the
+ * callers' "did the mark show" check looks only here.
+ */
+export async function markDifference(plain, marked) {
+  const photo = await sharp(plain).metadata();
+  const width = photo.width ?? 0;
+  const height = photo.height ?? 0;
+  const band = Math.min(height, fontSizeFor(width, height) * 3);
+  const region = { left: 0, top: height - band, width, height: band };
+  const a = await sharp(plain).extract(region).raw().toBuffer();
+  const b = await sharp(marked).extract(region).raw().toBuffer();
+  const length = Math.min(a.length, b.length);
+  let total = 0;
+  let count = 0;
+  for (let index = 0; index < length; index += 7) {
+    total += Math.abs(a[index] - b[index]);
+    count += 1;
+  }
+  return count === 0 ? 0 : total / count;
 }

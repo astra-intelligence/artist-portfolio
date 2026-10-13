@@ -12,7 +12,7 @@ import path from "path";
 import sharp from "sharp";
 import { previewFingerprint } from "../src/lib/image-hash.mjs";
 import { SUBJECTS } from "../src/lib/subjects.mjs";
-import { applyWatermark } from "../src/lib/watermark-svg.mjs";
+import { applyWatermark, markDifference } from "../src/lib/watermark-svg.mjs";
 
 const root = process.cwd();
 const originalsDir = path.join(root, "originals");
@@ -51,19 +51,6 @@ function walk(directory, prefix = "") {
   return found;
 }
 
-async function meanDiff(left, right) {
-  const a = await sharp(left).raw().toBuffer();
-  const b = await sharp(right).raw().toBuffer();
-  const length = Math.min(a.length, b.length);
-  let total = 0;
-  let count = 0;
-  for (let index = 0; index < length; index += 47) {
-    total += Math.abs(a[index] - b[index]);
-    count += 1;
-  }
-  return count === 0 ? 0 : total / count;
-}
-
 async function readJson(file, fallback) {
   try {
     return JSON.parse(await readFile(file, "utf8"));
@@ -84,9 +71,8 @@ const manifest = await readJson(manifestPath, { files: {} });
 manifest.files ??= {};
 
 const used = new Set();
-const label = String(studio.watermark || "PREVIEW").slice(0, 24);
 const showDomain = studio.domain && studio.domain !== "yourdomain.com";
-const credit = (showDomain ? `${studio.artistName} · ${studio.domain}` : studio.artistName).slice(0, 48);
+const credit = String(showDomain ? studio.domain : studio.artistName).slice(0, 48);
 
 for (const file of files) {
   const base = path.basename(file.relative, path.extname(file.relative));
@@ -115,14 +101,14 @@ for (const file of files) {
 
   let marked;
   try {
-    marked = await applyWatermark(plain, label, credit);
+    marked = await applyWatermark(plain, credit);
   } catch (error) {
     const size = await sharp(plain).metadata();
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(`${file.relative} could not be watermarked at ${size.width}×${size.height}. ${reason}`);
   }
 
-  const changed = await meanDiff(plain, marked);
+  const changed = await markDifference(plain, marked);
   if (changed < 0.15) {
     throw new Error(`Watermark did not show on ${file.relative} (difference ${changed.toFixed(3)}).`);
   }
