@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { imageFromForm, readWorkForm, slugify } from "@/lib/work-form";
 
-function form(fields: Record<string, string>) {
+// An array value becomes several entries under one name, the way a group
+// of checked checkboxes sharing a name arrives from the browser.
+function form(fields: Record<string, string | string[]>) {
   const data = new FormData();
-  for (const [key, value] of Object.entries(fields)) data.set(key, value);
+  for (const [key, value] of Object.entries(fields)) {
+    for (const item of Array.isArray(value) ? value : [value]) data.append(key, item);
+  }
   return data;
 }
 
@@ -27,7 +31,7 @@ test("a valid form gives the fields to save", () => {
       widthIn: "12",
       heightIn: "9.5",
       statement: "Line one\r\nLine two",
-      subject: "places",
+      subjects: "places",
       featured: "on",
     }),
   );
@@ -43,7 +47,7 @@ test("a valid form gives the fields to save", () => {
       widthIn: 12,
       heightIn: 9.5,
       statement: "Line one\nLine two",
-      subject: "places",
+      subjects: ["places"],
       featured: true,
     },
   });
@@ -58,10 +62,24 @@ test("whitespace in the title is collapsed and blank sizes are zero", () => {
 });
 
 test("a typed web name is used, and an unknown subject is dropped", () => {
-  const parsed = readWorkForm(form({ ...valid, slug: "lake-study", subject: "dragons" }));
+  const parsed = readWorkForm(form({ ...valid, slug: "lake-study", subjects: "dragons" }));
   assert.ok("fields" in parsed);
   assert.equal(parsed.fields.slug, "lake-study");
-  assert.equal(parsed.fields.subject, "");
+  assert.deepEqual(parsed.fields.subjects, []);
+});
+
+test("every checked subject is kept, in subject-list order, without repeats", () => {
+  const parsed = readWorkForm(
+    form({ ...valid, subjects: ["commissioned", "portraits", "dragons", "portraits", "narratives"] }),
+  );
+  assert.ok("fields" in parsed);
+  assert.deepEqual(parsed.fields.subjects, ["portraits", "narratives", "commissioned"]);
+});
+
+test("no checked subjects gives an empty list", () => {
+  const parsed = readWorkForm(form(valid));
+  assert.ok("fields" in parsed);
+  assert.deepEqual(parsed.fields.subjects, []);
 });
 
 test("bad fields come back as errors", () => {

@@ -176,21 +176,29 @@ function PaintingFields({
           maxLength={8}
         />
       </Field>
-      <Field id={`${idPrefix}-subject`} label="Subject">
-        <select
-          id={`${idPrefix}-subject`}
-          name="subject"
-          defaultValue={work?.subject || ""}
-          className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="">No group</option>
+      {/*
+        One checkbox per subject, all sharing the name "subjects", so the form
+        sends every checked id. A fieldset with a legend is the HTML way to
+        label a group of inputs; a single <label htmlFor> can only point at one.
+        Leave all unchecked to keep the painting out of the groups.
+      */}
+      <fieldset className="sm:col-span-2">
+        <legend className="text-sm leading-none font-medium">Subjects</legend>
+        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
           {SUBJECTS.map((subject) => (
-            <option key={subject.id} value={subject.id}>
+            <label key={subject.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="subjects"
+                value={subject.id}
+                defaultChecked={work?.subjects.includes(subject.id) || false}
+                className="size-4 accent-current"
+              />
               {subject.label}
-            </option>
+            </label>
           ))}
-        </select>
-      </Field>
+        </div>
+      </fieldset>
       <Field id={`${idPrefix}-statement`} label="Note" className="sm:col-span-2">
         <Textarea
           id={`${idPrefix}-statement`}

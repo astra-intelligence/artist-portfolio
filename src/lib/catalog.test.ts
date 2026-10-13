@@ -65,7 +65,7 @@ test("parseWorks fills safe defaults for missing or wrong fields", () => {
     widthIn: 0,
     heightIn: 0,
     statement: "",
-    subject: "",
+    subjects: [],
     featured: false,
     originalStatus: "not-for-sale",
     printsAvailable: false,
@@ -86,6 +86,29 @@ test("a missing year reads as 0, whatever today's date is", () => {
   assert.equal(work.year, 0);
 });
 
+test("an older entry with one subject string reads as a one-item list", () => {
+  const [old, blank, unknown] = parseWorks([
+    { slug: "lake", subject: "places" },
+    { slug: "pond", subject: "" },
+    { slug: "cave", subject: "dragons" },
+  ]);
+  assert.deepEqual(old.subjects, ["places"]);
+  assert.deepEqual(blank.subjects, []);
+  assert.deepEqual(unknown.subjects, []);
+});
+
+test("a subjects list wins over an older subject string", () => {
+  const [work] = parseWorks([{ slug: "lake", subject: "places", subjects: ["narratives"] }]);
+  assert.deepEqual(work.subjects, ["narratives"]);
+});
+
+test("serializeWorks writes subjects and drops the older subject field", () => {
+  const text = serializeWorks(parseWorks([{ slug: "lake", subject: "places" }]));
+  const [entry] = JSON.parse(text);
+  assert.deepEqual(entry.subjects, ["places"]);
+  assert.equal("subject" in entry, false);
+});
+
 test("serializeWorks round-trips through parseWorks", () => {
   const works = parseWorks([
     {
@@ -96,7 +119,7 @@ test("serializeWorks round-trips through parseWorks", () => {
       widthIn: 8,
       heightIn: 10,
       statement: "Quiet.",
-      subject: "places",
+      subjects: ["places", "commissioned"],
       featured: true,
       originalStatus: "sold",
       printsAvailable: true,

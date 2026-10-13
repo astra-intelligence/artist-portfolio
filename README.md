@@ -8,7 +8,7 @@ A catalog of original paintings. The pictures on the site are reduced, watermark
 
 The public site does not list prices, print sizes, or a way to order. That keeps it within Vercel’s free Hobby plan, which is for personal, non-commercial projects. The artist’s name, email, and biography live in [`content/studio.json`](content/studio.json).
 
-The front page keeps any painting marked “Show on the front page.” When that does not fill the page, the open spots are a daily selection that changes at midnight in Coeur d’Alene. The work page groups paintings by subject. The groups are the list in [`src/lib/subjects.mjs`](src/lib/subjects.mjs). A group appears once a painting is in it.
+The front page keeps any painting marked “Show on the front page.” When that does not fill the page, the open spots are a daily selection that changes at midnight in Coeur d’Alene. The work page groups paintings by subject. The groups are the list in [`src/lib/subjects.mjs`](src/lib/subjects.mjs). A group appears once a painting is in it. A painting can have several subjects: the filter buttons show it under each one, and the grouped view lists it once, under the first in that list.
 
 An earlier version of this project had a print-request flow. It is still in the git history. Putting it back on the public site means moving the Vercel project to a paid plan first.
 
@@ -54,7 +54,7 @@ npm run process-images
 
 ## Studio desk
 
-Open `/curate` on the Vercel address. Thomasene signs in with the studio password, then adds a painting, edits its title, year, medium, surface, size, subject, note, and “Show on the front page,” or removes it. Each photograph is reduced to a long edge of 1400 pixels, stripped of camera information, and watermarked before it is saved. The original file is discarded after that. It is never written into the repository.
+Open `/curate` on the Vercel address. Thomasene signs in with the studio password, then adds a painting, edits its title, year, medium, surface, size, subjects, note, and “Show on the front page,” or removes it. Each photograph is reduced to a long edge of 1400 pixels, stripped of camera information, and watermarked before it is saved. The original file is discarded after that. It is never written into the repository.
 
 Each save publishes a new commit, and Vercel rebuilds the catalog from that commit. That suits one painting at a time. For a large batch, use the photograph folder below.
 
