@@ -6,11 +6,12 @@
  * `params` is a Promise in this version of Next. Await it before reading slug.
  */
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PaintingViewer } from "@/components/painting-viewer";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { neighbours } from "@/lib/neighbours";
 import { emailIsPublic, formatInches, formatMaterials, site, workAlt } from "@/lib/site";
 import { subjectLabel } from "@/lib/subjects";
 import { getWork, getWorks } from "@/lib/works";
@@ -66,26 +67,41 @@ export default async function WorkDetailPage({
     ...rest.filter(sharesSubject),
     ...rest.filter((entry) => !sharesSubject(entry)),
   ].slice(0, 3);
+  const { previous, next, subject } = neighbours(getWorks(), work.slug);
+  const previousHref = previous ? `/work/${previous.slug}` : undefined;
+  const nextHref = next ? `/work/${next.slug}` : undefined;
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10 lg:py-14">
-      <p className="text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 text-sm text-muted-foreground">
         <Link href="/work" className="underline-offset-4 hover:underline">
           The work
         </Link>
-      </p>
+        {previous && next ? (
+          // rel="prev"/"next" tells browsers and search engines these pages
+          // form a sequence. The arrow keys do the same as these two links.
+          <nav aria-label={subject ? `${subjectLabel(subject)} paintings` : "Paintings"} className="flex gap-5">
+            <Link href={`/work/${previous.slug}`} rel="prev" className="underline-offset-4 hover:underline">
+              <span aria-hidden="true">← </span>
+              Previous<span className="sr-only">: {previous.title}</span>
+            </Link>
+            <Link href={`/work/${next.slug}`} rel="next" className="underline-offset-4 hover:underline">
+              Next<span className="sr-only">: {next.title}</span>
+              <span aria-hidden="true"> →</span>
+            </Link>
+          </nav>
+        ) : null}
+      </div>
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] lg:items-start">
-        <figure>
-          <Image
-            src={work.image}
-            alt={workAlt(work)}
-            width={work.imageWidth}
-            height={work.imageHeight}
-            priority
-            sizes="(min-width: 1024px) 58vw, 100vw"
-            className="h-auto w-full border border-border bg-card"
-          />
-        </figure>
+        <PaintingViewer
+          title={work.title}
+          image={work.image}
+          alt={workAlt(work)}
+          width={work.imageWidth}
+          height={work.imageHeight}
+          previousHref={previousHref}
+          nextHref={nextHref}
+        />
         <div className="lg:sticky lg:top-24">
           <div className="flex flex-wrap gap-2">
             {subjects.map((label) => (
